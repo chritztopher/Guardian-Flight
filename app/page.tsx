@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import Head from 'next/head';
 
 const topics = [
   { id: 'operational-concepts', name: 'Operational Concepts' },
@@ -41,6 +42,9 @@ export default function LoginPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '20px', backgroundColor: 'hsl(var(--background))', color: 'hsl(var(--foreground))' }}>
+      <Head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+      </Head>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: '400px', padding: '30px', border: '1px solid hsl(var(--border))', borderRadius: 'var(--radius)', boxShadow: '0 4px 12px hsla(var(--foreground), 0.1)' }}>
         <h1 style={{ textAlign: 'center', marginBottom: '30px', fontSize: '2rem' }}>Login</h1>
         <input
