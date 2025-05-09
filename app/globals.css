@@ -1,0 +1,556 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.perspective {
+  perspective: 1000px;
+}
+
+.transform-style-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+}
+
+/* We added rotate-180 to tailwind.config.js, so this class might not be needed here,
+   but it's good to have it as a reference or if direct CSS is preferred for it. */
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}
+
+:root {
+    /* Inspired by shadcn/ui dark theme default colors */
+    --background: 240 10% 3.9%; /* #09090B */
+    --foreground: 0 0% 98%;   /* #FAFAFA - Very light, good for white border */
+    --card: 240 4% 12%; /* Dark Gray - e.g., #1E1E22 */
+    --card-foreground: 0 0% 98%; /* Text on the dark gray card */
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 240 5.9% 10%; /* Primary button text on primary background - this is their bg color for primary items */
+    --primary-foreground: 0 0% 98%; /* Primary button text */
+    --secondary: 240 3.7% 15.9%; /* #27272A - Secondary button background */
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%; /* #A1A1AA */
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%; /* #27272A */
+    --input: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%; /* For focus rings */
+
+    --radius: 0.5rem; /* Default border radius */
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    font-size: 16px;
+}
+
+.app-container {
+    width: 100%;
+    max-width: 900px; 
+    height: 100vh; 
+    display: flex;
+    flex-direction: column;
+    background-color: hsl(var(--background)); /* Use CSS var */
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 25px;
+    border-bottom: 1px solid hsl(var(--border)); /* Use CSS var */
+}
+
+.logo-title {
+    display: flex;
+    align-items: center;
+    color: hsl(var(--foreground)); /* Use CSS var */
+}
+
+.logo-title h1 {
+    font-size: 1.2em;
+    margin: 0 0 0 10px;
+}
+
+.logo-title span {
+    margin-left: 8px;
+    cursor: pointer;
+}
+
+.logo {
+    width: 24px; 
+    height: 24px;
+    content: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="%232563EB"><rect width="100" height="100" rx="10"/></svg>'); /* Shadcn-like blue */
+}
+
+/* Styles for the "Back to Main Menu" button */
+.back-to-menu-button {
+    background-color: transparent;
+    color: hsl(var(--foreground));
+    border: 1px solid hsl(var(--border));
+    padding: 0.5rem 1rem;
+    margin-left: 10px;
+    cursor: pointer;
+    font-size: 0.875rem; /* 14px */
+    font-weight: 500;
+    border-radius: var(--radius);
+    transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, color 0.15s ease-in-out;
+    text-decoration: none; /* For Link components */
+    display: inline-flex; /* For Link components */
+    align-items: center; /* For Link components */
+}
+
+.back-to-menu-button:hover {
+    background-color: hsl(var(--accent));
+    color: hsl(var(--accent-foreground));
+}
+
+.card-info {
+    text-align: center;
+    padding: 10px 0;
+    font-size: 0.8em;
+    color: white; /* Changed from #A0A0B0 to white */
+    /* background-color: #1A1A2A; */ /* Background for this specific bar - REMOVED */
+}
+
+.card-info span:last-child {
+    margin-left: 20px;
+}
+
+.flashcard-container {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    overflow: hidden;
+    position: relative; /* Added for positioning context */
+}
+
+.flashcard { /* This is the main sliding container */
+    background-color: transparent;
+    border: none;
+    border-radius: var(--radius); /* Keep radius for clipping if children overflow, or remove if not needed */
+    padding: 0; /* Container itself needs no padding */
+    width: 100%;
+    max-width: 500px; /* Changed from 480px */
+    min-height: 280px; /* Changed from 320px */
+    box-shadow: none;
+    color: hsl(var(--card-foreground)); /* Usually inherited, but harmless */
+    perspective: 1000px; 
+    position: relative; 
+}
+
+.flashcard-inner { /* This is for the 3D flip effect */
+  position: relative;
+  width: 100%;
+  height: 100%; 
+  min-height: 280px; /* Changed from 320px */
+  transition: transform 0.6s;
+  transform-style: preserve-3d;
+  background-color: transparent; /* Ensure this is transparent */
+  border: none; /* Ensure this has no border */
+}
+
+.flashcard-inner.flipped {
+  transform: rotateY(180deg);
+}
+
+.flashcard-front,
+.flashcard-back { /* These are the visible faces of the card */
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  min-height: 280px; /* Changed from 320px */
+  -webkit-backface-visibility: hidden; 
+  backface-visibility: hidden;
+  display: flex; 
+  flex-direction: column;
+  justify-content: space-between; 
+  padding: 20px; /* Padding for the content within the card faces */
+  box-sizing: border-box; 
+  border-radius: var(--radius); 
+  background-color: hsl(var(--card)); /* The actual card background color */
+  border: 1px solid hsl(var(--foreground)); /* The desired white border */
+}
+
+.flashcard-back {
+  transform: rotateY(180deg);
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.hint-button {
+    background-color: transparent;
+    color: #A0A0B0;
+    border: none;
+    padding: 8px 0;
+    cursor: pointer;
+    font-size: 0.9em;
+    display: flex;
+    align-items: center;
+}
+
+.hint-button:hover {
+    color: #FFFFFF;
+}
+
+.card-actions button {
+    background-color: transparent;
+    color: #A0A0B0;
+    border: none;
+    font-size: 1.2em;
+    margin-left: 15px;
+    cursor: pointer;
+}
+
+.card-actions button:hover {
+    color: #FFFFFF;
+}
+
+.card-content {
+    color: #E0E0E0;
+    font-size: 1.1em;
+    line-height: 1.6;
+    flex-grow: 1;
+    position: relative;
+
+    /* Added/Modified for scrolling and alignment */
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start; /* Align content to the top for scrolling */
+    align-items: center; /* Center content block horizontally */
+    text-align: center; /* Center text within paragraphs */
+    overflow-y: auto; /* Allow vertical scrolling */
+    padding: 20px; /* Add consistent padding */
+}
+
+.card-content ul {
+    list-style-type: none;
+    padding-left: 0;
+}
+
+.card-content li {
+    margin-bottom: 8px;
+}
+
+/* Removed styles for .card-footer and .flip-button */
+
+/* New styles for the flip indicator */
+.flip-indicator {
+    position: absolute;
+    bottom: 10px;
+    right: 15px;
+    display: flex;
+    align-items: center;
+    font-size: 0.75rem; /* Smaller text */
+    color: hsl(var(--muted-foreground) / 0.8); /* Muted color, slightly transparent */
+    opacity: 0.7; /* Make it subtle */
+    transition: opacity 0.2s ease;
+    pointer-events: none; /* Prevent indicator from blocking clicks on card */
+}
+
+.flashcard-inner:hover .flip-indicator {
+    opacity: 1; /* Slightly more visible on hover */
+}
+
+.flip-indicator svg {
+    width: 1em; /* Size relative to font-size */
+    height: 1em;
+    stroke: currentColor; /* Use the text color */
+    margin-right: 0.3em; /* Space between icon and text */
+}
+
+/* Styles for Main Menu Page */
+.main-menu-content {
+  padding: 30px;
+  text-align: center;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.main-menu-content h2 {
+  font-size: 1.8em;
+  color: hsl(var(--foreground));
+  margin-bottom: 25px;
+}
+
+.topic-list {
+  list-style: none;
+  padding: 0;
+  width: 100%;
+  max-width: 400px; 
+}
+
+.topic-list-item {
+  margin-bottom: 15px;
+}
+
+.topic-link {
+  display: block;
+  padding: 0.75rem 1.25rem;
+  background-color: hsl(var(--secondary)); /* Secondary button style */
+  color: hsl(var(--secondary-foreground));
+  text-decoration: none;
+  border-radius: var(--radius);
+  font-size: 1.1em;
+  font-weight: 500;
+  transition: background-color 0.15s ease-in-out, transform 0.1s ease-in-out;
+  border: 1px solid hsl(var(--border));
+  text-align: center; /* Added to center text within buttons */
+  width: 100%; /* Ensure buttons take full width of their container li */
+}
+
+.topic-link:hover {
+  background-color: hsl(var(--secondary) / 0.8); /* Adjusted hover */
+  /* transform: translateY(-2px); */ /* Optional: can remove if too playful */
+  color: hsl(var(--secondary-foreground));
+}
+
+/* Style for selected topic links */
+.topic-link-selected {
+  background-color: hsl(var(--primary) / 0.7); /* Example: A slightly different background for selected */
+  color: hsl(var(--primary-foreground));
+  border: 1px solid hsl(var(--ring)); /* Example: A border to indicate selection */
+}
+
+.topic-link-selected:hover {
+  background-color: hsl(var(--primary) / 0.85); /* Slightly darker hover for selected */
+}
+
+/* Container for the Quiz Now button */
+.quiz-now-button-container {
+  margin-top: 25px; /* Space above the button */
+  width: 100%;
+  max-width: 400px; /* Match topic list width */
+  display: flex;
+  justify-content: center;
+}
+
+/* New style for the informational text on the menu */
+.menu-info-text {
+  font-size: 0.9em;
+  color: hsl(var(--muted-foreground));
+  margin-bottom: 20px; /* Space below the info text */
+  text-align: center; /* Ensure this text itself is centered */
+  max-width: 90%; /* Prevent it from being too wide on larger screens if .main-menu-content is very wide */
+}
+
+/* Styles for the Quiz Now button */
+.quiz-now-button {
+  padding: 0.75rem 1.5rem;
+  background-color: hsl(var(--primary)); /* Use primary color */
+  color: hsl(var(--primary-foreground));
+  text-decoration: none;
+  border-radius: var(--radius);
+  font-size: 1.1em;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease-in-out;
+}
+
+.quiz-now-button:hover {
+  background-color: hsl(var(--primary) / 0.85); /* Darken on hover */
+}
+
+/* Styles for the new header button container */
+.header-actions-right {
+    display: flex;
+    align-items: center;
+}
+
+/* Styles for the new "Back to Main Menu" button */
+.back-to-menu-button {
+    background-color: #2A2A3A; /* Darker button background, similar to old button */
+    color: #E0E0E0;
+    border: none;
+    padding: 8px 16px; /* A bit more padding for a standalone button */
+    margin-left: 10px;
+    cursor: pointer;
+    font-size: 0.9em;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+}
+
+.back-to-menu-button:hover {
+    background-color: #3A3A4A;
+}
+
+/* Adjust footer for menu page if needed */
+.menu-container footer {
+  border-top: 1px solid #2A2A3A; /* Keep border for consistency */
+  /* display: none; */ /* Optionally hide footer on menu */
+}
+
+/* New styles for side navigation buttons */
+.side-nav-button {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10; 
+    background-color: hsl(var(--background) / 0.7); 
+    color: hsl(var(--foreground)); /* This will be the SVG stroke color */
+    border: 1px solid hsl(var(--border) / 0.5);
+    width: 40px; 
+    height: 40px;
+    border-radius: 50%;
+    /* font-size: 1.5em; */ /* No longer needed for SVG text content */
+    /* line-height: 40px; */ /* No longer needed for SVG text content */
+    /* text-align: center; */ /* No longer needed for SVG text content */
+    padding: 0; /* Important for SVG positioning */
+    transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.1s ease;
+    display: inline-flex; /* Added from original .nav-button base */
+    justify-content: center; /* Added from original .nav-button base */
+    align-items: center; /* Added from original .nav-button base */
+    cursor: pointer; /* Ensure cursor is pointer */
+}
+
+/* Ensure SVGs within the button take up the color from the button's color property */
+.side-nav-button svg {
+    stroke: currentColor;
+    width: 20px; /* Explicit size for the SVG icon itself */
+    height: 20px;
+}
+
+.side-nav-button:hover {
+    background-color: hsl(var(--accent) / 0.9); /* More opaque on hover */
+    border-color: hsl(var(--accent-foreground));
+    transform: translateY(-50%) scale(1.1); /* Slight scale effect */
+}
+
+.prev-button {
+    left: 140px; /* Changed from 20px */
+}
+
+.next-button {
+    right: 140px; /* Changed from 20px */
+}
+
+/* Styles for the bottom controls container */
+.flashcard-controls-bottom {
+    display: flex; /* Use flex to center its children, if any */
+    justify-content: center; /* Center playback-buttons div */
+    width: 100%; /* Take full width to help with centering */
+    margin-top: 20px; /* Add space above the controls */
+}
+
+/* Styles for playback buttons container (e.g., shuffle) */
+
+.shuffle-button {
+    background-color: transparent;
+    border: none;
+    color: hsl(var(--foreground)); /* This will make the SVG icon white */
+    padding: 8px; /* Add some padding for easier clicking */
+    cursor: pointer;
+    display: inline-flex; /* Helps align SVG if needed */
+    align-items: center;
+    justify-content: center;
+}
+
+.shuffle-button svg {
+    /* Explicitly set stroke if currentColor isn't enough, but it should be. */
+    /* stroke: hsl(var(--foreground)); */ 
+}
+
+.shuffle-button:hover {
+    background-color: hsl(var(--accent) / 0.1); /* Subtle hover effect */
+}
+
+/* shuffle-button--animating styles if needed, for now, keep it simple */
+.shuffle-button--animating {
+    /* Add animation-specific styles here if desired */
+}
+
+/* Renamed from .card-question-item */
+/* These classes now only apply the animation, not layout properties */
+.slide-in-from-right,
+.slide-in-from-left,
+.slide-out-to-left,
+.slide-out-to-right {
+  /* Removed: width, position, top, left */
+  /* The .flashcard element itself has these properties or they are inherited */
+}
+
+.slide-in-from-right {
+  animation: slideInFromRightAnimation 0.4s ease-out forwards;
+}
+
+.slide-in-from-left {
+  animation: slideInFromLeftAnimation 0.4s ease-out forwards;
+}
+
+.slide-out-to-left {
+  animation: slideOutToLeftAnimation 0.4s ease-out forwards;
+}
+
+.slide-out-to-right {
+  animation: slideOutToRightAnimation 0.4s ease-out forwards;
+}
+
+/* Renamed from @keyframes slideInFromRight */
+@keyframes slideInFromRightAnimation {
+  from {
+    opacity: 0;
+    transform: translateX(60%); 
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0%); 
+  }
+}
+
+@keyframes slideInFromLeftAnimation {
+  from {
+    opacity: 0;
+    transform: translateX(-60%); 
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0%); 
+  }
+}
+
+@keyframes slideOutToLeftAnimation {
+  from {
+    opacity: 1;
+    transform: translateX(0%);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-60%);
+  }
+}
+
+@keyframes slideOutToRightAnimation {
+  from {
+    opacity: 1;
+    transform: translateX(0%);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(60%);
+  }
+} 
