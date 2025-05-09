@@ -407,25 +407,19 @@ header {
 
 /* New styles for side navigation buttons */
 .side-nav-button {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    z-index: 10; 
     background-color: hsl(var(--background) / 0.7); 
     color: hsl(var(--foreground)); /* This will be the SVG stroke color */
     border: 1px solid hsl(var(--border) / 0.5);
     width: 40px; 
     height: 40px;
     border-radius: 50%;
-    /* font-size: 1.5em; */ /* No longer needed for SVG text content */
-    /* line-height: 40px; */ /* No longer needed for SVG text content */
-    /* text-align: center; */ /* No longer needed for SVG text content */
     padding: 0; /* Important for SVG positioning */
     transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.1s ease;
-    display: inline-flex; /* Added from original .nav-button base */
-    justify-content: center; /* Added from original .nav-button base */
-    align-items: center; /* Added from original .nav-button base */
-    cursor: pointer; /* Ensure cursor is pointer */
+    display: inline-flex; 
+    justify-content: center; 
+    align-items: center; 
+    cursor: pointer; 
+    margin: 0 10px; /* Added for spacing when in flex row */
 }
 
 /* Ensure SVGs within the button take up the color from the button's color property */
@@ -438,15 +432,48 @@ header {
 .side-nav-button:hover {
     background-color: hsl(var(--accent) / 0.9); /* More opaque on hover */
     border-color: hsl(var(--accent-foreground));
-    transform: translateY(-50%) scale(1.1); /* Slight scale effect */
 }
 
 .prev-button {
-    left: 140px; /* Changed from 20px */
+    /* left: 140px; REMOVED - Handled by media queries now */
 }
 
 .next-button {
-    right: 140px; /* Changed from 20px */
+    /* right: 140px; REMOVED - Handled by media queries now */
+}
+
+/* Media query for mobile devices - buttons are in flex row */
+@media (max-width: 768px) {
+    .side-nav-button:hover {
+        transform: scale(1.1); /* Keep or adjust mobile hover effect */
+    }
+    .flashcard-controls-bottom {
+        margin-top: 15px; /* Space between card and controls */
+    }
+    .flashcard-container {
+        justify-content: center;      /* Center card and controls vertically */
+        padding: 35px 20px;         /* Current padding: 35px top/bottom, 20px left/right */
+    }
+}
+
+/* Media query for desktop devices - pull buttons to the side */
+@media (min-width: 769px) {
+    .side-nav-button { /* Apply to both prev and next via common class */
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 10;
+        margin: 0; /* Reset margin for absolute positioning */
+    }
+    .side-nav-button:hover {
+         transform: translateY(-50%) scale(1.1); /* Restore original hover effect for desktop */
+    }
+    .prev-button {
+        left: calc(50% - 310px); /* Increased gap: 250px (half card) + 40px (button) + 20px (gap) = 310px */
+    }
+    .next-button {
+        right: calc(50% - 310px); /* Increased gap: 250px (half card) + 40px (button) + 20px (gap) = 310px */
+    }
 }
 
 /* Styles for the bottom controls container */
@@ -458,6 +485,12 @@ header {
 }
 
 /* Styles for playback buttons container (e.g., shuffle) */
+.playback-buttons {
+    display: flex;
+    justify-content: center; /* Can be space-around or space-between if more spacing is desired */
+    align-items: center;
+    width: 100%; /* Ensure it takes full width for centering */
+}
 
 .shuffle-button {
     background-color: transparent;
