@@ -53,7 +53,7 @@ export default function LoginPage() {
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Password"
           onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
-          style={{ width: '90%', padding: '12px', marginBottom: '20px', borderRadius: 'var(--radius)', border: '1px solid hsl(var(--border))', backgroundColor: 'hsl(var(--input))', color: 'white' }}
+          style={{ width: '90%', padding: '12px', marginBottom: '20px', borderRadius: 'var(--radius)', border: '1px solid hsl(var(--border))', backgroundColor: 'hsl(var(--input))', color: 'white', fontSize: '16px' }}
         />
         {error && <p style={{ color: 'hsl(var(--destructive)) /* Assuming --destructive is red */', marginBottom: '20px', textAlign: 'center' }}>{error}</p>}
         <button
