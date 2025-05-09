@@ -344,22 +344,34 @@ interface UserAnswers {
   [questionId: string]: string;
 }
 
+interface ReviewedQuestion {
+  questionId: number;
+  questionText: string;
+  userAnswerText: string;
+  correctAnswerText: string;
+  isCorrect: boolean;
+  options: string[]; // All options for this question
+}
+
 function MultiTopicFlashcardPageContent() {
   const searchParams = useSearchParams();
   const topicsParam = searchParams.get('topics');
+  const questionCountParam = searchParams.get('count');
 
-  const [cards, setCards] = useState<Card[]>([]);
-  const [selectedTopicNames, setSelectedTopicNames] = useState<string>('Multi-Topic Quiz');
-  const [allPossibleAnswers, setAllPossibleAnswers] = useState<string[]>([]);
-
-  // New state for the full quiz page
+  const [allTopicsCards, setAllTopicsCards] = useState<Card[]>([]);
+  const [currentQuizCards, setCurrentQuizCards] = useState<Card[]>([]);
   const [userAnswers, setUserAnswers] = useState<UserAnswers>({});
-  const [quizSubmitted, setQuizSubmitted] = useState<boolean>(false);
-  const [finalScore, setFinalScore] = useState<number>(0);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [score, setScore] = useState<number | null>(null);
+  const [showResults, setShowResults] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [topicTitle, setTopicTitle] = useState<string>('Multi-Topic Quiz');
+  const [numQuestions, setNumQuestions] = useState(10); // Default
+  const [reviewedQuestions, setReviewedQuestions] = useState<ReviewedQuestion[]>([]);
 
   useEffect(() => {
     setIsLoading(true);
+    setError(null); // Clear any existing errors on param change
     if (topicsParam) {
       const topicIds = topicsParam.split(',');
       let combinedCardsSetup: Card[] = [];
@@ -381,7 +393,12 @@ function MultiTopicFlashcardPageContent() {
         }
       });
 
-      setAllPossibleAnswers(Array.from(uniqueAnswers)); // Populate for handleTryAgain and fallback logic consistency
+      setAllTopicsCards([]);
+      setCurrentQuizCards([]);
+      setUserAnswers({});
+      setScore(null);
+      setShowResults(false);
+      setReviewedQuestions([]); // Reset reviewed questions
 
       // Second pass: Build the cards for the quiz
       topicIds.forEach(topicId => {
@@ -425,75 +442,85 @@ function MultiTopicFlashcardPageContent() {
         }
       });
       
-      setCards(shuffleArray(combinedCardsSetup));
-      setSelectedTopicNames(Array.from(distinctTopicDisplayNames).length > 0 ? Array.from(distinctTopicDisplayNames).join(', ') : 'Selected Topics');
+      setAllTopicsCards(shuffleArray(combinedCardsSetup));
+      setCurrentQuizCards(shuffleArray(combinedCardsSetup));
+      
+      const displayNamesArray = Array.from(distinctTopicDisplayNames);
+      if (displayNamesArray.length === 1) {
+        setTopicTitle(displayNamesArray[0]);
+      } else if (displayNamesArray.length > 1) {
+        setTopicTitle('Multi-Topic Quiz');
+      } else { 
+        // This case should ideally be covered if topicsParam is empty or invalid,
+        // leading to the 'No Topics Selected' title later.
+        // However, as a fallback if distinctTopicDisplayNames is unexpectedly empty despite a topicsParam:
+        setTopicTitle('Quiz'); 
+      }
+      
+      setNumQuestions(questionCountParam ? parseInt(questionCountParam) : 10);
+    } else {
+      // Logic for when topicsParam is not present (e.g., direct navigation without params)
+      setAllTopicsCards([]);
+      setCurrentQuizCards([]);
       setUserAnswers({});
-      setQuizSubmitted(false);
-      setFinalScore(0);
+      setScore(null);
+      setShowResults(false);
+      setReviewedQuestions([]);
+      setTopicTitle('No Topics Selected'); // Set a specific title for this case
+      setError("No topics were selected for the quiz. Please go back to the main menu and choose topics.");
     }
     setIsLoading(false);
-  }, [topicsParam]);
+  }, [topicsParam, questionCountParam]);
 
   const handleAnswerChange = (questionId: number, selectedOption: string) => {
-    setUserAnswers(prevAnswers => ({
-      ...prevAnswers,
-      [questionId.toString()]: selectedOption,
-    }));
+    setUserAnswers(prev => ({ ...prev, [questionId.toString()]: selectedOption }));
+    setError(null); // Clear error when user makes a change
   };
 
   const handleSubmitQuiz = () => {
-    let score = 0;
-    cards.forEach(card => {
-      if (userAnswers[card.id.toString()] === card.answer) {
-        score++;
+    if (Object.keys(userAnswers).length !== currentQuizCards.length) {
+      setError("Hey Ding Dong, answer all the questions before submitting");
+      return;
+    }
+    setError(null); // Clear error if submission is valid
+
+    let currentScore = 0;
+    const review: ReviewedQuestion[] = [];
+
+    currentQuizCards.forEach(card => {
+      const userAnswer = userAnswers[card.id.toString()];
+      const isCorrect = userAnswer === card.answer;
+      if (isCorrect) {
+        currentScore++;
       }
+      review.push({
+        questionId: card.id,
+        questionText: card.question,
+        userAnswerText: userAnswer || "Not answered",
+        correctAnswerText: card.answer,
+        isCorrect: isCorrect,
+        options: card.options,
+      });
     });
-    setFinalScore(score);
-    setQuizSubmitted(true);
+    setScore(currentScore);
+    setReviewedQuestions(review);
+    setShowResults(true);
   };
 
   const handleTryAgain = () => {
     setUserAnswers({});
-    setQuizSubmitted(false);
-    setFinalScore(0);
-    setCards(shuffleArray(cards));
-    const reconfiguredCards = cards.map(card => {
-      const correctAnswer = card.answer;
-      let currentDistractors: string[];
-
-      if (card.distractors && card.distractors.length > 0) {
-        currentDistractors = shuffleArray(card.distractors);
-      } else {
-        currentDistractors = [];
-        const availableDistractors = allPossibleAnswers.filter(ans => ans !== correctAnswer);
-        const shuffledAvailableDistractors = shuffleArray(availableDistractors);
-        for (let i = 0; i < shuffledAvailableDistractors.length && currentDistractors.length < 3; i++) {
-          if (!currentDistractors.includes(shuffledAvailableDistractors[i])) {
-            currentDistractors.push(shuffledAvailableDistractors[i]);
-          }
-        }
-      }
-
-      while (currentDistractors.length < 3) {
-        currentDistractors.push(`Placeholder Distractor (Retry) ${currentDistractors.length + 1}`);
-      }
-      if (currentDistractors.length > 3) {
-        currentDistractors = currentDistractors.slice(0, 3);
-      }
-      
-      return {
-        ...card,
-        options: shuffleArray([correctAnswer, ...currentDistractors])
-      };
-    });
-    setCards(shuffleArray(reconfiguredCards));
+    setScore(null);
+    setShowResults(false);
+    setReviewedQuestions([]); // Reset reviewed questions
+    setCurrentQuizCards(shuffleArray(allTopicsCards));
+    setError(null); // Clear any errors
   };
 
   if (isLoading) {
     return <div className="app-container"><main className="flashcard-container"><p>Loading quiz...</p></main></div>;
   }
 
-  if (!cards || cards.length === 0) {
+  if (!currentQuizCards || currentQuizCards.length === 0) {
     return (
       <div className="app-container">
         <header>
@@ -515,7 +542,7 @@ function MultiTopicFlashcardPageContent() {
     );
   }
 
-  const allQuestionsAnswered = Object.keys(userAnswers).length === cards.length;
+  const allQuestionsAnswered = Object.keys(userAnswers).length === currentQuizCards.length;
 
   // Helper function to get the quote based on the score
   const getScoreQuote = (score: number, totalQuestions: number): string => {
@@ -533,28 +560,76 @@ function MultiTopicFlashcardPageContent() {
     }
   };
 
-  if (quizSubmitted) {
-    const scoreQuote = getScoreQuote(finalScore, cards.length);
-    const scorePercentage = cards.length > 0 ? Math.round((finalScore / cards.length) * 100) : 0;
+  if (showResults) {
+    const quote = getScoreQuote(score!, currentQuizCards.length);
+    const scorePercentage = currentQuizCards.length > 0 ? Math.round((score! / currentQuizCards.length) * 100) : 0;
+
     return (
-      <div className="app-container">
-        <header>
-          <div className="logo-title">
-            <div className="logo"></div>
-            <h1>Guardian Flight - Quiz Results</h1>
-          </div>
-          <div className="header-actions-right">
-            <Link href="/main-menu" className="back-to-menu-button" passHref>
-              Back to Main Menu
-            </Link>
-          </div>
-        </header>
-        <main className="flashcard-container" style={{ textAlign: 'center', padding: '20px' }}>
-          <h2>Quiz Complete!</h2>
-          <p style={{ fontSize: '1.2em', margin: '20px 0' }}>Your final score: {scorePercentage}%</p>
-          {scoreQuote && <p style={{ fontSize: '1.1em', margin: '20px 0', fontStyle: 'italic' }}>"{scoreQuote}"</p>}
-          <button onClick={handleTryAgain} className="quiz-now-button" style={{ marginRight: '10px' }}>Try Again</button>
-        </main>
+      <div className="quiz-results-container" style={{ 
+        padding: '20px', 
+        textAlign: 'center', 
+        backgroundColor: 'hsl(var(--background))',
+        color: 'hsl(var(--foreground))'
+      }}>
+        <h2>Quiz Complete!</h2>
+        <p style={{ fontSize: '1.2em', margin: '20px 0' }}>Your score: {scorePercentage}% ({score} / {currentQuizCards.length})</p>
+        <p className="score-quote" style={{ fontSize: '1.1em', margin: '20px 0', fontStyle: 'italic' }}>&quot;{quote}&quot;</p>
+        
+        <div className="reviewed-questions-container" style={{
+           marginTop: '30px', 
+           textAlign: 'left',
+        }}>
+          <h3 style={{ marginBottom: '20px', fontSize: '1.25em', color: 'hsl(var(--foreground))' }}>Review Your Answers:</h3>
+          {reviewedQuestions.map((reviewItem, index) => (
+            <div key={reviewItem.questionId} className="reviewed-question-item" style={{ 
+                marginBottom: '15px', 
+                padding: '15px', 
+                border: `1px solid hsl(var(--border))`,
+                borderRadius: `var(--radius)`,
+                backgroundColor: `hsl(var(--card))`,
+                color: `hsl(var(--card-foreground))`
+            }}>
+              <p style={{ margin: '0 0 10px 0' }}><strong>Question {index + 1}:</strong> {reviewItem.questionText}</p>
+              <p style={{
+                margin: '0',
+                color: reviewItem.isCorrect ? 'hsl(145, 63%, 49%)' : 'hsl(0, 72%, 51%)', /* Softer Green / Red */
+                fontWeight: '500'
+              }}>
+                Your answer: {reviewItem.userAnswerText} 
+                {!reviewItem.isCorrect && <span style={{ color: `hsl(var(--muted-foreground))` }}> (Correct: {reviewItem.correctAnswerText})</span>}
+              </p>
+              {/* Optional: Display all options and highlight choices - styles would also need adjustment here */}
+            </div>
+          ))}
+        </div>
+
+        <div className="quiz-actions" style={{ marginTop: '30px' }}>
+          <button onClick={handleTryAgain} className="quiz-button" style={{
+            backgroundColor: 'hsl(var(--primary))',
+            color: 'hsl(var(--primary-foreground))',
+            border: `1px solid hsl(var(--border))`,
+            padding: '10px 20px',
+            borderRadius: `var(--radius)`,
+            cursor: 'pointer',
+            fontSize: '1em',
+            marginRight: '10px'
+          }}>
+            Try Again with Same Topics
+          </button>
+          {/* Add other actions like "Back to Main Menu" if needed, styled similarly */}
+          <Link href="/main-menu" passHref className="back-to-menu-button" style={{
+            display: 'inline-block', // Ensure proper rendering next to button
+            backgroundColor: 'hsl(var(--secondary))',
+            color: 'hsl(var(--secondary-foreground))',
+            // border: `1px solid hsl(var(--border))` is already in globals.css, but can be explicit
+            // padding: '10px 20px', // from globals.css
+            // borderRadius: `var(--radius)`, // from globals.css
+            // textDecoration: 'none', // from globals.css
+            // fontSize: '1em' // from globals.css for consistency, or adjust
+          }}>
+            Back to Main Menu
+          </Link>
+        </div>
       </div>
     );
   }
@@ -564,7 +639,7 @@ function MultiTopicFlashcardPageContent() {
       <header>
         <div className="logo-title">
           <div className="logo"></div>
-          <h1>Guardian Flight - {selectedTopicNames}</h1>
+          <h1>Guardian Flight - {topicTitle}</h1>
         </div>
         <div className="header-actions-right">
           <Link href="/main-menu" className="back-to-menu-button" passHref>
@@ -574,7 +649,7 @@ function MultiTopicFlashcardPageContent() {
       </header>
       
       <main className="main-quiz-content" style={{ padding: '20px', overflowY: 'auto', flexGrow: 1 }}>
-        {cards.map((card, index) => (
+        {currentQuizCards.map((card, index) => (
           <div key={card.id} className="quiz-question-item" style={{ marginBottom: '30px', padding: '15px', border: '1px solid hsl(var(--border))', borderRadius: 'var(--radius)' }}>
             <h3 style={{ marginBottom: '10px' }}>Question {index + 1}:</h3>
             <div className="question-text" style={{ marginBottom: '15px' }}>
@@ -600,9 +675,10 @@ function MultiTopicFlashcardPageContent() {
           </div>
         ))}
         <div style={{ marginTop: '30px', textAlign: 'center' }}>
+          {error && <p style={{ color: 'hsl(0, 72%, 51%)', marginBottom: '15px', fontWeight: '500' }}>{error}</p>}
           <button 
             onClick={handleSubmitQuiz} 
-            disabled={!allQuestionsAnswered}
+            // disabled={!allQuestionsAnswered} // We now handle this via the error message
             className="quiz-now-button" 
             style={{ padding: '10px 20px', fontSize: '1.1em' }}
           >
