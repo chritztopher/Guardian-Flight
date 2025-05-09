@@ -447,12 +447,17 @@ header {
     .side-nav-button:hover {
         transform: scale(1.1); /* Keep or adjust mobile hover effect */
     }
+    .side-nav-button { 
+        position: static; /* Ensure explicit static positioning for mobile */
+    }
     .flashcard-controls-bottom {
-        margin-top: 15px; /* Space between card and controls */
+        margin-top: 15px;     /* Space between card and controls */
+        position: relative;     /* Establish positioning context for children */
+        flex-wrap: wrap;      /* Allow items like shuffle button to wrap */
     }
     .flashcard-container {
-        justify-content: center;      /* Center card and controls vertically */
-        padding: 35px 20px;         /* Current padding: 35px top/bottom, 20px left/right */
+        justify-content: flex-start;  /* Align card and controls to the top */
+        padding: 40px 20px 30px;      /* Adjusted padding: 40px top, 20px L/R, 30px bottom */
     }
 }
 
